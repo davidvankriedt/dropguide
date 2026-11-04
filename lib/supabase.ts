@@ -10,9 +10,9 @@ export type DropLocation = {
   venue_name: string;
   address?: string;
   dock_instructions?: string;
-  access_code?: string;
   lat: number;
   lng: number;
   image_url?: string;
+  image_urls?: string[];
   created_at?: string;
 };

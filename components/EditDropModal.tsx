@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase, DropLocation } from '@/lib/supabase';
-import { X, Save, Loader2, Camera, Image as ImageIcon } from 'lucide-react';
+import { X, Save, Loader2, Camera, Trash2, Plus } from 'lucide-react';
 
 interface EditDropModalProps {
   location: DropLocation;
@@ -11,23 +11,32 @@ interface EditDropModalProps {
 }
 
 export default function EditDropModal({ location, onClose, onSuccess }: EditDropModalProps) {
-  const [title, setTitle] = useState(location.title || '');
+  const [title, setTitle] = useState(location.venue_name || '');
   const [dockInstructions, setDockInstructions] = useState(location.dock_instructions || '');
-  
-  // Track existing photo URL and any new file selected
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(location.image_url || null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(location.image_url || null);
 
+  // Pre-load existing photos (check image_urls array first, fallback to legacy image_url)
+  const initialImages = location.image_urls?.length 
+    ? location.image_urls 
+    : (location.image_url ? [location.image_url] : []);
+
+  const [existingImages, setExistingImages] = useState<string[]>(initialImages);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file)); // Show instant local preview
+    if (e.target.files && e.target.files.length > 0) {
+      const selected = Array.from(e.target.files);
+      setNewFiles((prev) => [...prev, ...selected]);
     }
+  };
+
+  const removeExistingImage = (urlToRemove: string) => {
+    setExistingImages((prev) => prev.filter((url) => url !== urlToRemove));
+  };
+
+  const removeNewFile = (indexToRemove: number) => {
+    setNewFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -35,51 +44,49 @@ export default function EditDropModal({ location, onClose, onSuccess }: EditDrop
     setSaving(true);
     setErrorMsg('');
 
-    let finalImageUrl = currentImageUrl;
+    try {
+      // 1. Upload all newly added files in parallel
+      const uploadPromises = newFiles.map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `docks/${fileName}`;
 
-    // 1. If driver picked a new image, upload to Supabase Storage first
-    if (selectedFile) {
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `docks/${fileName}`;
+        const { error: uploadError } = await supabase.storage
+          .from('dock-photos')
+          .upload(filePath, file, { upsert: true });
 
-      const { error: uploadError } = await supabase.storage
-        .from('dock-photos') // Ensure this matches your bucket name
-        .upload(filePath, selectedFile, { upsert: true });
+        if (uploadError) throw uploadError;
 
-      if (uploadError) {
-        setSaving(false);
-        setErrorMsg(`Failed to upload photo: ${uploadError.message}`);
-        return;
-      }
+        const { data } = supabase.storage
+          .from('dock-photos')
+          .getPublicUrl(filePath);
 
-      // Retrieve public URL for the newly uploaded photo
-      const { data: publicUrlData } = supabase.storage
-        .from('dock-photos')
-        .getPublicUrl(filePath);
+        return data.publicUrl;
+      });
 
-      finalImageUrl = publicUrlData.publicUrl;
+      const uploadedUrls = await Promise.all(uploadPromises);
+      const combinedUrls = [...existingImages, ...uploadedUrls];
+
+      // 2. Persist updated array to Supabase
+      const { error: dbError } = await supabase
+        .from('drop_locations')
+        .update({
+          venue_name: title,
+          dock_instructions: dockInstructions,
+          image_urls: combinedUrls,
+          image_url: combinedUrls[0] || null, // Keep primary image populated for backward compatibility
+        })
+        .eq('id', location.id);
+
+      if (dbError) throw dbError;
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error saving changes');
+    } finally {
+      setSaving(false);
     }
-
-    // 2. Update drop_locations row in Postgres
-    const { error: dbError } = await supabase
-      .from('drop_locations')
-      .update({
-        title,
-        dock_instructions: dockInstructions,
-        image_url: finalImageUrl,
-      })
-      .eq('id', location.id);
-
-    setSaving(false);
-
-    if (dbError) {
-      setErrorMsg(dbError.message);
-      return;
-    }
-
-    onSuccess();
-    onClose();
   };
 
   return (
@@ -98,25 +105,53 @@ export default function EditDropModal({ location, onClose, onSuccess }: EditDrop
           </p>
         )}
 
-        <form onSubmit={handleUpdate} className="mt-4 space-y-3.5">
-          {/* Photo Preview & Upload */}
+        <form onSubmit={handleUpdate} className="mt-4 space-y-4">
+          {/* Multi-Photo Grid */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Dock Photo</label>
-            <div className="flex items-center gap-3">
-              <div className="relative w-20 h-20 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
-                {previewUrl ? (
-                  <img src={previewUrl} alt="Dock preview" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon size={24} className="text-slate-600" />
-                )}
-              </div>
+            <label className="text-xs font-semibold text-slate-300 block mb-2">
+              Dock Photos ({existingImages.length + newFiles.length})
+            </label>
+            
+            <div className="grid grid-cols-3 gap-2">
+              {/* Existing Uploaded Photos */}
+              {existingImages.map((url, i) => (
+                <div key={url} className="relative aspect-square rounded-xl bg-slate-950 border border-slate-800 overflow-hidden group">
+                  <img src={url} alt={`Dock ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(url)}
+                    className="absolute top-1 right-1 p-1 bg-rose-600/90 rounded-md text-white hover:bg-rose-500"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
 
-              <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 py-3 px-3 rounded-xl border border-dashed border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition-colors">
-                <Camera size={16} className="text-amber-500" />
-                <span>{previewUrl ? 'Replace Photo' : 'Take / Upload Photo'}</span>
+              {/* Newly Staged Photos (Pending Upload) */}
+              {newFiles.map((file, i) => (
+                <div key={i} className="relative aspect-square rounded-xl bg-slate-950 border border-amber-500/50 overflow-hidden">
+                  <img src={URL.createObjectURL(file)} alt="Staged" className="w-full h-full object-cover opacity-80" />
+                  <span className="absolute bottom-1 left-1 bg-amber-500 text-slate-950 text-[9px] font-bold px-1 rounded">
+                    NEW
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeNewFile(i)}
+                    className="absolute top-1 right-1 p-1 bg-rose-600/90 rounded-md text-white"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add Photo Button */}
+              <label className="aspect-square flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700 bg-slate-950 hover:bg-slate-800 cursor-pointer text-slate-400 hover:text-white transition-colors">
+                <Plus size={20} className="text-amber-500" />
+                <span className="text-[10px] font-semibold">Add Photo</span>
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
