@@ -14,7 +14,6 @@ export default function AddDropModal({ coord, onClose, onSuccess }: AddDropModal
   const [venueName, setVenueName] = useState('');
   const [address, setAddress] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [accessCode, setAccessCode] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -47,7 +46,6 @@ export default function AddDropModal({ coord, onClose, onSuccess }: AddDropModal
           venue_name: venueName,
           address,
           dock_instructions: instructions,
-          access_code: accessCode,
           lat: coord.lat,
           lng: coord.lng,
           image_url: imageUrl,
@@ -100,16 +98,6 @@ export default function AddDropModal({ coord, onClose, onSuccess }: AddDropModal
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-300">Gate / Lock Code</label>
-              <input
-                type="text"
-                placeholder="e.g. 4821# or Key on hook"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                className="w-full mt-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500"
-              />
-            </div>
             <div>
               <label className="text-xs font-medium text-slate-300">Coordinates</label>
               <div className="mt-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-400 truncate">
