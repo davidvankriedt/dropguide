@@ -66,8 +66,16 @@ export default function Home() {
         </button>
       </header>
 
-      <div className="flex-1 w-full h-full">
-         {} 
+      {/* Full Screen Map */}
+      <div className="relative flex-1 w-full h-full min-h-[400px] z-0">
+        <Map
+          locations={locations}
+          onSelectCoords={(lat, lng) => {
+            setGpsCoord({ lat, lng });
+            setIsModalOpen(true);
+          }}
+          selectedCoord={gpsCoord}
+        />
       </div>
 
       <div className="absolute bottom-6 left-4 right-4 z-20 flex gap-3 pointer-events-none">

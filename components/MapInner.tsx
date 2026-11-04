@@ -41,8 +41,10 @@ export default function MapInner({ locations, onSelectCoords, selectedCoord }: M
       attributionControl={false}
     >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-      />
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
       <LocationPicker onSelect={onSelectCoords} />
 
       {/* Render all saved dock pins */}
