@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/next"
+
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
 
