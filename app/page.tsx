@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase, DropLocation } from '@/lib/supabase';
 import Map from '@/components/Map';
 import AddDropModal from '@/components/AddDropModal';
+import EditDropModal from '@/components/EditDropModal';
 import { Crosshair, RefreshCw } from 'lucide-react';
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
   const [gpsCoord, setGpsCoord] = useState<{ lat: number; lng: number } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<DropLocation | null>(null);
 
   const fetchLocations = async () => {
     const { data, error } = await supabase
@@ -75,6 +77,7 @@ export default function Home() {
             setIsModalOpen(true);
           }}
           selectedCoord={gpsCoord}
+          onEditLocation={(loc) => setEditingLocation(loc)}
         />
       </div>
 
@@ -99,6 +102,14 @@ export default function Home() {
           onSuccess={fetchLocations}
         />
       ) : null}
+
+      {editingLocation && (
+        <EditDropModal
+          location={editingLocation}
+          onClose={() => setEditingLocation(null)}
+          onSuccess={fetchLocations}
+        />
+)}
     </main>
   );
 }

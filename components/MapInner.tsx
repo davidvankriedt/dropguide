@@ -14,7 +14,7 @@ const defaultIcon = L.icon({
   popupAnchor: [1, -34],
 });
 
-function LocationPicker({ onSelect }: { onSelect: (lat: number, lng: number) => void }) {
+function LocationPicker({ onSelect }: {onSelect: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e: LeafletMouseEvent) {
       onSelect(e.latlng.lat, e.latlng.lng);
@@ -27,9 +27,10 @@ interface MapInnerProps {
   locations: DropLocation[];
   onSelectCoords: (lat: number, lng: number) => void;
   selectedCoord: { lat: number; lng: number } | null;
+  onEditLocation: (loc: DropLocation) => void;
 }
 
-export default function MapInner({ locations, onSelectCoords, selectedCoord }: MapInnerProps) {
+export default function MapInner({ locations, onSelectCoords, selectedCoord, onEditLocation }: MapInnerProps) {
   // Default centered roughly on Sydney
   const defaultCenter: [number, number] = [-33.8688, 151.2093];
 
@@ -54,16 +55,20 @@ export default function MapInner({ locations, onSelectCoords, selectedCoord }: M
             <div className="p-1 space-y-1.5 max-w-[220px] text-slate-900">
               <h3 className="font-bold text-sm leading-tight text-slate-900">{loc.venue_name}</h3>
               {loc.address && <p className="text-xs text-slate-600">{loc.address}</p>}
-              {loc.access_code && (
-                <div className="bg-amber-100 text-amber-900 text-xs px-2 py-0.5 rounded font-mono font-semibold">
-                  Gate/Pin: {loc.access_code}
-                </div>
-              )}
               {loc.dock_instructions && (
                 <p className="text-xs bg-slate-100 p-1.5 rounded text-slate-800">
                   {loc.dock_instructions}
                 </p>
               )}
+
+              <button
+                type="button"
+                onClick={() => onEditLocation(loc)}
+                className="mt-2.5 w-full bg-slate-900 text-white text-[11px] font-semibold py-1.5 px-2 rounded-lg hover:bg-slate-800 active:scale-95 transition-all text-center"
+                > 
+                Edit Dock Details
+              </button>
+              
               {loc.image_url && (
                 <img
                   src={loc.image_url}

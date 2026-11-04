@@ -16,6 +16,7 @@ interface MapProps {
   locations: DropLocation[];
   onSelectCoords: (lat: number, lng: number) => void;
   selectedCoord: { lat: number; lng: number } | null;
+  onEditLocation: (loc: DropLocation) => void;
 }
 
 export default function Map(props: MapProps) {
