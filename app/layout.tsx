@@ -1,7 +1,6 @@
-import { Analytics } from "@vercel/analytics/next"
-
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
+import AnalyticsTracker from '@/components/AnalyticsTracker';
 
 export const metadata = {
   title: 'Keg Drop Helper',
@@ -12,8 +11,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-slate-950 text-slate-100 antialiased">{children}</body>
-      <Analytics />
+      <body className="bg-slate-950 text-slate-100 antialiased">
+        {children}
+        <AnalyticsTracker />
+      </body>
     </html>
   );
 }
