@@ -1,6 +1,6 @@
 # Keg Drop Helper
 
-[**Live Web App**](https://dropguide.vercel.app) // [**Report Bug / Feedback**](https://github.com/davidvankriedt/kegdrop/issues/new)
+[**Live Web App**](https://dropguide.vercel.app) • [**Report Bug / Feedback**](https://github.com/davidvankriedt/kegdrop/issues/new)
 
 A mobile-first web tool built for Bevchain logistic drivers to find drop-off points. Eliminates dispatch calls and loading dock confusion by letting drivers crowdsource and access pinpoint drop notes, ramp clearances, and access photos directly on the road.
 
