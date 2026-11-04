@@ -68,7 +68,6 @@ export default function Home() {
 
       <div className="flex-1 w-full h-full">
          {} 
-        />
       </div>
 
       <div className="absolute bottom-6 left-4 right-4 z-20 flex gap-3 pointer-events-none">
