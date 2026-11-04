@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect } from 'react';
 import { supabase, DropLocation } from '@/lib/supabase';
 import Map from '@/components/Map';
